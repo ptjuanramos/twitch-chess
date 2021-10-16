@@ -1,35 +1,37 @@
 import React, { useState, useEffect } from "react";
 
 import Chessboard from "chessboardjsx";
-import ChessHubConnectionFactory from "../services/chess-hub-connection-factory";
-import ChessHubHandler from "../services/chess-hub-receiver-handler";
+import TwitchChatConnectionFactory from "../services/twitch-chat-connection-factory";
+import TwitchChatMessageHandler from "../services/twitch-chat-message-handler";
+
 const Chess = require("chess.js");
 
+const connectionFactory = new TwitchChatConnectionFactory();
+const chatMessageHandler = new TwitchChatMessageHandler();
+
 const ReactiveChessBoard = () => {
-    const [connection, setConnection] = useState(null);
+    const [client, setClient] = useState(null);
     const [nextMovePlayer, setNextMovePlayer] = useState('b');
     const [gameIsOver, setGameIsOver] = useState(false);
 
     const [chess] = useState(new Chess());
     const [fen, setFen] = useState(chess.fen());
-    const connectionFactory = new ChessHubConnectionFactory();
-    const chessHubReceiverHandler = new ChessHubHandler();
+    
 
     useEffect(() => {
-        setConnection(connectionFactory.createConnection());
+        setClient(connectionFactory.createClient());
     }, []);
 
     useEffect(() => {
-        if (connection) {
-            chessHubReceiverHandler
-                .startAndReceive(connection, (message) => {
-                    let move = message.split(",");
-                    handleMove({ from: move[0], to: move[1], promotion: 'q'});
-                });
-        }
-    }, [connection]);
+        if (client) {
+            chatMessageHandler.connect(client);
 
-    const handleMove = (move) => {
+            chatMessageHandler
+                .handleMove(client, moveHandler, (move) => true); // change lambda function after PR approval in chess.js
+        }
+    }, [client]);
+
+    const moveHandler = (move) => {
         if (chess.move(move)) {
             setFen(chess.fen());
         }
@@ -50,7 +52,7 @@ const ReactiveChessBoard = () => {
                 width={400}
                 position={fen}
                 onDrop={(move) =>
-                    handleMove({
+                    moveHandler({
                         from: move.sourceSquare,
                         to: move.targetSquare,
                         promotion: "q",

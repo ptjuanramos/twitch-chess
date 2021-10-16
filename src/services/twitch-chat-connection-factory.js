@@ -8,7 +8,7 @@ export default class TwitchChatConnectionFactory {
                 secure: true,
                 reconnect: true
             },
-            channels: [ process.env.TWITCH_CHANNEL ]
+            channels: [ "ptjuanramos" ]
         });
     }
 
